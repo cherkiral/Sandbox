@@ -18,6 +18,8 @@ class TwitterAccount(Base):
     owns_alphapass = Column(Boolean, default=False)
     proxy = Column(String, nullable=True)
 
+    max_accounts = Column(Integer, default=20)
+
     user_id = Column(Integer, ForeignKey('users.id'))
 
     # Relationship with User

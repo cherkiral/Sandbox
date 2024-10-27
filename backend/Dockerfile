@@ -14,8 +14,11 @@ ARG REPO_URL="https://github.com/cherkiral/Sandbox.git"
 # Clone the repository
 RUN rm -rf /app/.git && git clone ${REPO_URL} /app
 
-# Set the working directory to /app/backend where requirements.txt is located
+# Set the working directory to /app/backend where requirements.txt and alembic.ini are located
 WORKDIR /app/backend
+
+# Ensure alembic.ini is present
+COPY alembic.ini .
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt

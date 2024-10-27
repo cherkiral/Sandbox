@@ -1,0 +1,19 @@
+/* RegisterPage.css */
+.register-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.register-form {
+    width: 300px;
+}
+
+input {
+    width: 100%;
+}
+
+button {
+    width: 100%;
+}

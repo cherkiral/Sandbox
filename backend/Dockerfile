@@ -1,20 +1,27 @@
-# Use an official Python runtime as a parent image
+# Start from a Python base image
 FROM python:3.10-slim
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Install Git
+RUN apt-get update && apt-get install -y git && apt-get clean
 
-# Install any needed packages specified in requirements.txt
+# Build argument to force Docker cache invalidation
+ARG CACHEBUST=1
+
+# Clone the repository
+ARG REPO_URL="https://github.com/cherkiral/Sandbox.git"
+RUN rm -rf /app/.git && git clone ${REPO_URL} /app
+
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 8000 available to the world outside this container
+# Expose the port
 EXPOSE 8000
 
-# Run uvicorn
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
+# Set environment variables
 ENV PYTHONPATH=/app
 
+# Run the app with Alembic migrations and Uvicorn
+CMD sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"

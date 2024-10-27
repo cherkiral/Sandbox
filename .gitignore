@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+.DS_Store
+.vscode/
+.idea/
+node_modules/
+alembic.ini
+migrations/  # If you prefer not to version control migrations
+.pytest_cache/
+

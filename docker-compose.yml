@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: backend
+    container_name: fastapi_app
+    ports:
+      - "8080:8000"
+    depends_on:
+      - db
+      - rabbitmq
+    environment:
+      - DATABASE_URL=postgresql://admin:admin@db:5432/sandbox
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    command: >
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  db:
+    image: postgres:13
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: sandbox
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: "rabbitmq:3-management"
+    ports:
+      - "15673:15672"
+      - "5673:5672"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"  # Directly mapping the host port to the frontend's port 3000
+    depends_on:
+      - app
+
+volumes:
+  postgres_data:
+

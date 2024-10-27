@@ -12,6 +12,7 @@ class TwitterAccountBase(BaseModel):
     is_verified: Optional[str] = False
     owns_alphapass: Optional[bool] = False
     proxy: Optional[str]
+    max_accounts: Optional[int] = 20
 
 
 class TwitterAccountCreate(TwitterAccountBase):

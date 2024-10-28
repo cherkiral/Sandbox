@@ -125,166 +125,84 @@ const Dashboard = () => {
   };
 
   const handleAction = async (action) => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const updatedAccounts = [...accounts];
+    const token = localStorage.getItem('authToken');
+    const actionPromises = selectedAccounts.map(async (accountId) => {
+      const account = accounts.find((acc) => acc.id === accountId);
 
-      for (const accountId of selectedAccounts) {
-        const account = accounts.find((acc) => acc.id === accountId);
+      setLoadingState((prevLoading) => ({
+        ...prevLoading,
+        [accountId]: { ...prevLoading[accountId], [action]: true },
+      }));
 
+      try {
+        if (action === 'check_ep') {
+          setEpChanges((prevChanges) => ({
+            ...prevChanges,
+            [accountId]: 'loading',
+          }));
+          const response = await axios.get(`${BASE_URL}/accounts/${accountId}/ep`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const newEpCount = response.data.ep;
+          const epDifference = newEpCount - account.ep_count;
+
+          setEpChanges((prevChanges) => ({
+            ...prevChanges,
+            [accountId]: epDifference === 0 ? 'No change' : epDifference,
+          }));
+        } else if (action === 'tweet') {
+          const response = await axios.post(
+            `${BASE_URL}/accounts/tweet`,
+            { twitter_token: account.twitter_token, text: "https://sandbox.game #TheSandbox #AlphaSeason4 #AS4SocialChallenge" },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setTweetStatus((prevStatuses) => ({
+            ...prevStatuses,
+            [accountId]: response.data.tweet_response?.errors ? 'Failed' : 'Success',
+          }));
+        } else if (action === 'sandbox_confirm') {
+          const response = await axios.post(
+            `${BASE_URL}/accounts/sandbox/confirm/${accountId}`,
+            {},
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setSandboxStatus((prevStatuses) => ({
+            ...prevStatuses,
+            [accountId]: response.data.challenge_id ? `Challenge ID: ${response.data.challenge_id}` : 'Error',
+          }));
+        } else if (action === 'check_verification') {
+          const response = await axios.get(`${BASE_URL}/accounts/${accountId}/verification`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const newVerificationStatus = response.data.verification_status;
+          setAccounts((prevAccounts) =>
+            prevAccounts.map((acc) =>
+              acc.id === accountId ? { ...acc, is_verified: newVerificationStatus } : acc
+            )
+          );
+        } else if (action === 'check_alphapass') {
+          const response = await axios.get(`${BASE_URL}/accounts/${accountId}/alphapass`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const ownsAlphaPass = response.data.owns_alphapass;
+          setAccounts((prevAccounts) =>
+            prevAccounts.map((acc) =>
+              acc.id === accountId ? { ...acc, owns_alphapass: ownsAlphaPass } : acc
+            )
+          );
+        }
+      } catch (error) {
+        console.error(`Error performing action "${action}" for account ${accountId}:`, error);
+      } finally {
         setLoadingState((prevLoading) => ({
           ...prevLoading,
-          [accountId]: { ...prevLoading[accountId], [action]: true },
+          [accountId]: { ...prevLoading[accountId], [action]: false },
         }));
-
-        if (action === 'check_ep') {
-          try {
-            setEpChanges((prevChanges) => ({
-              ...prevChanges,
-              [accountId]: 'loading',
-            }));
-            const response = await axios.get(`${BASE_URL}/accounts/${accountId}/ep`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const newEpCount = response.data.ep;
-            const epDifference = newEpCount - account.ep_count;
-
-            const updatedAccountIndex = updatedAccounts.findIndex((acc) => acc.id === accountId);
-            if (updatedAccountIndex !== -1) {
-              updatedAccounts[updatedAccountIndex].ep_count = newEpCount;
-            }
-
-            setEpChanges((prevChanges) => ({
-              ...prevChanges,
-              [accountId]: epDifference === 0 ? 'No change' : epDifference,
-            }));
-          } catch (error) {
-            console.error(`Error checking EP for account ${accountId}:`, error);
-            setEpChanges((prevChanges) => ({
-              ...prevChanges,
-              [accountId]: 'Error fetching EP',
-            }));
-          } finally {
-            setLoadingState((prevLoading) => ({
-              ...prevLoading,
-              [accountId]: { ...prevLoading[accountId], check_ep: false },
-            }));
-          }
-        }
-
-        if (action === 'tweet') {
-          try {
-            const response = await axios.post(
-              `${BASE_URL}/accounts/tweet`,
-              { twitter_token: account.twitter_token, text: "https://sandbox.game #TheSandbox #AlphaSeason4 #AS4SocialChallenge" },
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (response.data.tweet_response && response.data.tweet_response.errors) {
-              const errorMessage = response.data.tweet_response.errors[0].message;
-              setTweetStatus((prevStatuses) => ({
-                ...prevStatuses,
-                [accountId]: errorMessage,
-              }));
-            } else {
-              setTweetStatus((prevStatuses) => ({
-                ...prevStatuses,
-                [accountId]: 'Tweet posted successfully!',
-              }));
-            }
-          } catch (error) {
-            setTweetStatus((prevStatuses) => ({
-              ...prevStatuses,
-              [accountId]: 'Failed to post tweet',
-            }));
-            console.error(`Error posting tweet for account ${accountId}:`, error);
-          }
-        }
-
-        if (action === 'sandbox_confirm') {
-          try {
-            const response = await axios.post(
-              `${BASE_URL}/accounts/sandbox/confirm/${accountId}`,
-              {},
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (response.data.errors) {
-              const errorMessage = response.data.errors[0].message;
-              setSandboxStatus((prevStatuses) => ({
-                ...prevStatuses,
-                [accountId]: errorMessage,
-              }));
-            } else {
-              const challengeId = response.data.challenge_id;
-              setSandboxStatus((prevStatuses) => ({
-                ...prevStatuses,
-                [accountId]: `Challenge queued, ID: ${challengeId}`,
-              }));
-            }
-          } catch (error) {
-            setSandboxStatus((prevStatuses) => ({
-              ...prevStatuses,
-              [accountId]: 'Failed to queue Sandbox confirmation',
-            }));
-            console.error(`Error sending Sandbox confirmation for account ${accountId}:`, error);
-          } finally {
-            setLoadingState((prevLoading) => ({
-              ...prevLoading,
-              [accountId]: { ...prevLoading[accountId], sandbox_confirm: false },
-            }));
-          }
-        }
-
-        if (action === 'check_verification') {
-          try {
-            const response = await axios.get(`${BASE_URL}/accounts/${accountId}/verification`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const newVerificationStatus = response.data.verification_status;
-
-            setAccounts((prevAccounts) =>
-              prevAccounts.map((acc) =>
-                acc.id === accountId ? { ...acc, is_verified: newVerificationStatus } : acc
-              )
-            );
-          } catch (error) {
-            console.error(`Error checking verification status for account ${accountId}:`, error);
-          } finally {
-            setLoadingState((prevLoading) => ({
-              ...prevLoading,
-              [accountId]: { ...prevLoading[accountId], check_verification: false },
-            }));
-          }
-        }
-
-        if (action === 'check_alphapass') {
-          try {
-            const response = await axios.get(`${BASE_URL}/accounts/${accountId}/alphapass`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const ownsAlphaPass = response.data.owns_alphapass;
-
-            setAccounts((prevAccounts) =>
-              prevAccounts.map((acc) =>
-                acc.id === accountId ? { ...acc, owns_alphapass: ownsAlphaPass } : acc
-              )
-            );
-          } catch (error) {
-            console.error(`Error checking AlphaPass ownership for account ${accountId}:`, error);
-          } finally {
-            setLoadingState((prevLoading) => ({
-              ...prevLoading,
-              [accountId]: { ...prevLoading[accountId], check_alphapass: false },
-            }));
-          }
-        }
       }
+    });
 
-      setAccounts(updatedAccounts);
-    } catch (error) {
-      console.error(`Error performing action "${action}":`, error);
-    }
+    await Promise.all(actionPromises);
+    fetchAccounts();
   };
 
   const handleBulkUpload = async () => {
@@ -418,7 +336,7 @@ const Dashboard = () => {
                     <td>{account.ep_count}</td>
                     <td>{tweetStatus[account.id]}</td>
                     <td>{sandboxStatus[account.id]}</td>
-                    <td>{account.is_verified === 'Verified' ? '✔️' : account.is_verified}</td>
+                    <td>{account.is_verified ? '✔️' : '❌'}</td>
                     <td>{account.owns_alphapass ? '✔️' : '❌'}</td>
                     <td>
                       <Form.Control
@@ -469,7 +387,7 @@ const Dashboard = () => {
                       {loadingState[account.id]?.check_verification ? (
                         <ClipLoader size={20} color={"#000"} />
                       ) : (
-                        account.is_verified === 'Verified' ? '✔️' : account.is_verified
+                        account.is_verified ? '✔️' : '❌'
                       )}
                     </td>
                     <td>

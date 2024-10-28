@@ -364,57 +364,57 @@ const Dashboard = () => {
                     </td>
                   </>
                 ) : (
-                  <>
-                    <td>{account.account_number}</td>
-                    <td>{account.twitter_token}</td>
-                    <td>{account.sandbox_login}</td>
-                    <td>{account.sandbox_password}</td>
-                    <td>
-                      {loadingState[account.id]?.ep ? (
-                        <ClipLoader size={20} color={"#000"} />
-                      ) : (
-                        <>
-                          {account.ep_count}
-                          {epChanges[account.id] !== 0 && (
-                            <div style={{ color: 'green', fontSize: '12px' }}>
-                              +{epChanges[account.id]}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </td>
-                    <td>{tweetStatus[account.id]}</td>
-                    <td>
-                      {loadingState[account.id]?.sandbox_confirm ? (
-                        <ClipLoader size={20} color={"#000"} />
-                      ) : (
-                        sandboxStatus[account.id]
-                      )}
-                    </td>
-                    <td>
-                      {loadingState[account.id]?.check_verification ? (
-                        <ClipLoader size={20} color={"#000"} />
-                      ) : (
-                        account.is_verified === 'Verified' ? '✔️' : account.is_verified
-                      )}
-                    </td>
-                    <td>
-                      {loadingState[account.id]?.check_alphapass ? (
-                        <ClipLoader size={20} color={"#000"} />
-                      ) : (
-                        account.owns_alphapass ? '✔️' : '❌'
-                      )}
-                    </td>
-                    <td>{account.proxy}</td>
-                    <td>
-                      <Button variant="warning" onClick={() => handleEditClick(account)}>
-                        Edit
-                      </Button>{' '}
-                      <Button variant="danger" onClick={() => handleDelete(account.id)}>
-                        Delete
-                      </Button>
-                    </td>
-                  </>
+                    <>
+                      <td>{account.account_number}</td>
+                      <td>{account.twitter_token}</td>
+                      <td>{account.sandbox_login}</td>
+                      <td>{account.sandbox_password}</td>
+                      <td>
+                        {loadingState[account.id]?.ep ? (
+                            <ClipLoader size={20} color={"#000"}/>
+                        ) : (
+                            <>
+                              {account.ep_count}
+                              {epChanges[account.id] !== 0 && (
+                                  <div style={{color: 'green', fontSize: '12px'}}>
+                                    +{epChanges[account.id]}
+                                  </div>
+                              )}
+                            </>
+                        )}
+                      </td>
+                      <td>{tweetStatus[account.id]}</td>
+                      <td>
+                        {loadingState[account.id]?.sandbox_confirm ? (
+                            <ClipLoader size={20} color={"#000"}/>
+                        ) : (
+                            sandboxStatus[account.id]
+                        )}
+                      </td>
+                      <td>
+                        {loadingState[account.id]?.check_verification ? (
+                            <ClipLoader size={20} color={"#000"}/>
+                        ) : (
+                            account.is_verified ? '✔️' : '❌'
+                        )}
+                      </td>
+                      <td>
+                        {loadingState[account.id]?.check_alphapass ? (
+                            <ClipLoader size={20} color={"#000"}/>
+                        ) : (
+                            account.owns_alphapass ? '✔️' : '❌'
+                        )}
+                      </td>
+                      <td>{account.proxy}</td>
+                      <td>
+                        <Button variant="warning" onClick={() => handleEditClick(account)}>
+                          Edit
+                        </Button>{' '}
+                        <Button variant="danger" onClick={() => handleDelete(account.id)}>
+                          Delete
+                        </Button>
+                      </td>
+                    </>
                 )}
               </tr>
             ))}

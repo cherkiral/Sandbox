@@ -124,84 +124,92 @@ const Dashboard = () => {
     }
   };
 
-  const handleAction = async (action) => {
+  const batchAction = async (action, batchSize = 5) => {
     const token = localStorage.getItem('authToken');
-    const actionPromises = selectedAccounts.map(async (accountId) => {
-      const account = accounts.find((acc) => acc.id === accountId);
+    const batchedAccounts = [];
 
-      setLoadingState((prevLoading) => ({
-        ...prevLoading,
-        [accountId]: { ...prevLoading[accountId], [action]: true },
-      }));
-
-      try {
-        if (action === 'check_ep') {
-          setEpChanges((prevChanges) => ({
-            ...prevChanges,
-            [accountId]: 'loading',
-          }));
-          const response = await axios.get(`${BASE_URL}/accounts/${accountId}/ep`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const newEpCount = response.data.ep;
-          const epDifference = newEpCount - account.ep_count;
-
-          setEpChanges((prevChanges) => ({
-            ...prevChanges,
-            [accountId]: epDifference === 0 ? 'No change' : epDifference,
-          }));
-        } else if (action === 'tweet') {
-          const response = await axios.post(
-            `${BASE_URL}/accounts/tweet`,
-            { twitter_token: account.twitter_token, text: "https://sandbox.game #TheSandbox #AlphaSeason4 #AS4SocialChallenge" },
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          setTweetStatus((prevStatuses) => ({
-            ...prevStatuses,
-            [accountId]: response.data.tweet_response?.errors ? 'Failed' : 'Success',
-          }));
-        } else if (action === 'sandbox_confirm') {
-          const response = await axios.post(
-            `${BASE_URL}/accounts/sandbox/confirm/${accountId}`,
-            {},
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          setSandboxStatus((prevStatuses) => ({
-            ...prevStatuses,
-            [accountId]: response.data.challenge_id ? `Challenge ID: ${response.data.challenge_id}` : 'Error',
-          }));
-        } else if (action === 'check_verification') {
-          const response = await axios.get(`${BASE_URL}/accounts/${accountId}/verification`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const newVerificationStatus = response.data.verification_status;
-          setAccounts((prevAccounts) =>
-            prevAccounts.map((acc) =>
-              acc.id === accountId ? { ...acc, is_verified: newVerificationStatus } : acc
-            )
-          );
-        } else if (action === 'check_alphapass') {
-          const response = await axios.get(`${BASE_URL}/accounts/${accountId}/alphapass`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const ownsAlphaPass = response.data.owns_alphapass;
-          setAccounts((prevAccounts) =>
-            prevAccounts.map((acc) =>
-              acc.id === accountId ? { ...acc, owns_alphapass: ownsAlphaPass } : acc
-            )
-          );
-        }
-      } catch (error) {
-        console.error(`Error performing action "${action}" for account ${accountId}:`, error);
-      } finally {
+    for (let i = 0; i < selectedAccounts.length; i += batchSize) {
+      const batch = selectedAccounts.slice(i, i + batchSize);
+      const batchPromises = batch.map(async (accountId) => {
+        const account = accounts.find((acc) => acc.id === accountId);
         setLoadingState((prevLoading) => ({
           ...prevLoading,
-          [accountId]: { ...prevLoading[accountId], [action]: false },
+          [accountId]: { ...prevLoading[accountId], [action]: true },
         }));
-      }
-    });
 
-    await Promise.all(actionPromises);
+        try {
+          if (action === 'check_ep') {
+            const response = await axios.get(`${BASE_URL}/accounts/${accountId}/ep`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const newEpCount = response.data.ep;
+            const epDifference = newEpCount - account.ep_count;
+
+            setAccounts((prevAccounts) =>
+              prevAccounts.map((acc) =>
+                acc.id === accountId ? { ...acc, ep_count: newEpCount } : acc
+              )
+            );
+            setEpChanges((prevChanges) => ({
+              ...prevChanges,
+              [accountId]: epDifference === 0 ? 'No change' : epDifference,
+            }));
+          } else if (action === 'tweet') {
+            const response = await axios.post(
+              `${BASE_URL}/accounts/tweet`,
+              { twitter_token: account.twitter_token, text: "https://sandbox.game #TheSandbox #AlphaSeason4 #AS4SocialChallenge" },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setTweetStatus((prevStatuses) => ({
+              ...prevStatuses,
+              [accountId]: response.data?.tweet_response?.errors
+                ? response.data.tweet_response.errors[0].message
+                : 'Tweet posted successfully!',
+            }));
+          } else if (action === 'sandbox_confirm') {
+            const response = await axios.post(
+              `${BASE_URL}/accounts/sandbox/confirm/${accountId}`,
+              {},
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setSandboxStatus((prevStatuses) => ({
+              ...prevStatuses,
+              [accountId]: response.data.errors
+                ? response.data.errors[0].message
+                : `Challenge queued, ID: ${response.data.challenge_id}`,
+            }));
+          } else if (action === 'check_verification') {
+            const response = await axios.get(`${BASE_URL}/accounts/${accountId}/verification`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            setAccounts((prevAccounts) =>
+              prevAccounts.map((acc) =>
+                acc.id === accountId ? { ...acc, is_verified: response.data.verification_status } : acc
+              )
+            );
+          } else if (action === 'check_alphapass') {
+            const response = await axios.get(`${BASE_URL}/accounts/${accountId}/alphapass`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            setAccounts((prevAccounts) =>
+              prevAccounts.map((acc) =>
+                acc.id === accountId ? { ...acc, owns_alphapass: response.data.owns_alphapass } : acc
+              )
+            );
+          }
+        } catch (error) {
+          console.error(`Error performing ${action} for account ${accountId}:`, error);
+        } finally {
+          setLoadingState((prevLoading) => ({
+            ...prevLoading,
+            [accountId]: { ...prevLoading[accountId], [action]: false },
+          }));
+        }
+      });
+      batchedAccounts.push(Promise.all(batchPromises));
+    }
+
+    await Promise.all(batchedAccounts);
     fetchAccounts();
   };
 
@@ -243,10 +251,10 @@ const Dashboard = () => {
       <Row className="mb-3">
         <Col>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <Button onClick={() => handleAction('tweet')} disabled={selectedAccounts.length === 0}>
+            <Button onClick={() => batchAction('tweet')} disabled={selectedAccounts.length === 0}>
               Post Tweet
             </Button>
-            <Button onClick={() => handleAction('sandbox_confirm')} disabled={selectedAccounts.length === 0}>
+            <Button onClick={() => batchAction('sandbox_confirm')} disabled={selectedAccounts.length === 0}>
               Sandbox Confirm Request
             </Button>
           </div>
@@ -254,13 +262,13 @@ const Dashboard = () => {
 
         <Col>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <Button onClick={() => handleAction('check_ep')} disabled={selectedAccounts.length === 0}>
+            <Button onClick={() => batchAction('check_ep')} disabled={selectedAccounts.length === 0}>
               Check EP
             </Button>
-            <Button onClick={() => handleAction('check_verification')} disabled={selectedAccounts.length === 0}>
+            <Button onClick={() => batchAction('check_verification')} disabled={selectedAccounts.length === 0}>
               Check Verification Status
             </Button>
-            <Button onClick={() => handleAction('check_alphapass')} disabled={selectedAccounts.length === 0}>
+            <Button onClick={() => batchAction('check_alphapass')} disabled={selectedAccounts.length === 0}>
               Check AlphaPass Ownership
             </Button>
           </div>
@@ -336,7 +344,7 @@ const Dashboard = () => {
                     <td>{account.ep_count}</td>
                     <td>{tweetStatus[account.id]}</td>
                     <td>{sandboxStatus[account.id]}</td>
-                    <td>{account.is_verified ? '✔️' : '❌'}</td>
+                    <td>{account.is_verified === 'Verified' ? '✔️' : account.is_verified}</td>
                     <td>{account.owns_alphapass ? '✔️' : '❌'}</td>
                     <td>
                       <Form.Control
@@ -387,7 +395,7 @@ const Dashboard = () => {
                       {loadingState[account.id]?.check_verification ? (
                         <ClipLoader size={20} color={"#000"} />
                       ) : (
-                        account.is_verified ? '✔️' : '❌'
+                        account.is_verified === 'Verified' ? '✔️' : account.is_verified
                       )}
                     </td>
                     <td>

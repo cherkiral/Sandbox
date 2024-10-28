@@ -21,7 +21,6 @@ const Dashboard = () => {
     proxy: '',
   });
   const [bulkFile, setBulkFile] = useState(null);
-  const [generalError, setGeneralError] = useState(null); // To display general error messages
 
   useEffect(() => {
     fetchAccounts();
@@ -57,7 +56,6 @@ const Dashboard = () => {
       setSandboxStatus(initialSandboxStatus);
       setLoadingState(initialLoadingState);
     } catch (error) {
-      setGeneralError('Error fetching Twitter accounts');
       console.error('Error fetching Twitter accounts:', error);
     }
   };
@@ -96,7 +94,6 @@ const Dashboard = () => {
       setEditingAccountId(null);
       fetchAccounts();
     } catch (error) {
-      setGeneralError('Error updating Twitter account');
       console.error('Error updating Twitter account:', error);
     }
   };
@@ -107,7 +104,6 @@ const Dashboard = () => {
       await deleteTwitterAccount(token, accountId);
       fetchAccounts();
     } catch (error) {
-      setGeneralError('Error deleting Twitter account');
       console.error('Error deleting Twitter account:', error);
     }
   };
@@ -147,7 +143,6 @@ const Dashboard = () => {
               ...prevChanges,
               [accountId]: 'loading',
             }));
-
             const response = await axios.get(`${BASE_URL}/accounts/${accountId}/ep`, {
               headers: { Authorization: `Bearer ${token}` },
             });
@@ -164,11 +159,11 @@ const Dashboard = () => {
               [accountId]: epDifference === 0 ? 'No change' : epDifference,
             }));
           } catch (error) {
+            console.error(`Error checking EP for account ${accountId}:`, error);
             setEpChanges((prevChanges) => ({
               ...prevChanges,
               [accountId]: 'Error fetching EP',
             }));
-            console.error(`Error checking EP for account ${accountId}:`, error);
           } finally {
             setLoadingState((prevLoading) => ({
               ...prevLoading,
@@ -200,7 +195,7 @@ const Dashboard = () => {
           } catch (error) {
             setTweetStatus((prevStatuses) => ({
               ...prevStatuses,
-              [accountId]: error.response?.data?.detail || 'Failed to post tweet',
+              [accountId]: 'Failed to post tweet',
             }));
             console.error(`Error posting tweet for account ${accountId}:`, error);
           }
@@ -240,11 +235,54 @@ const Dashboard = () => {
             }));
           }
         }
+
+        if (action === 'check_verification') {
+          try {
+            const response = await axios.get(`${BASE_URL}/accounts/${accountId}/verification`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const newVerificationStatus = response.data.verification_status;
+
+            setAccounts((prevAccounts) =>
+              prevAccounts.map((acc) =>
+                acc.id === accountId ? { ...acc, is_verified: newVerificationStatus } : acc
+              )
+            );
+          } catch (error) {
+            console.error(`Error checking verification status for account ${accountId}:`, error);
+          } finally {
+            setLoadingState((prevLoading) => ({
+              ...prevLoading,
+              [accountId]: { ...prevLoading[accountId], check_verification: false },
+            }));
+          }
+        }
+
+        if (action === 'check_alphapass') {
+          try {
+            const response = await axios.get(`${BASE_URL}/accounts/${accountId}/alphapass`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const ownsAlphaPass = response.data.owns_alphapass;
+
+            setAccounts((prevAccounts) =>
+              prevAccounts.map((acc) =>
+                acc.id === accountId ? { ...acc, owns_alphapass: ownsAlphaPass } : acc
+              )
+            );
+          } catch (error) {
+            console.error(`Error checking AlphaPass ownership for account ${accountId}:`, error);
+          } finally {
+            setLoadingState((prevLoading) => ({
+              ...prevLoading,
+              [accountId]: { ...prevLoading[accountId], check_alphapass: false },
+            }));
+          }
+        }
       }
 
       setAccounts(updatedAccounts);
     } catch (error) {
-      setGeneralError(`Error performing action "${action}"`);
       console.error(`Error performing action "${action}":`, error);
     }
   };
@@ -263,22 +301,13 @@ const Dashboard = () => {
       fetchAccounts();
       setBulkFile(null);
     } catch (error) {
-      const errorMessage = error.response?.data?.detail || 'Error uploading bulk accounts';
-      setGeneralError(errorMessage);
-      console.error(errorMessage);
+      console.error('Error uploading bulk accounts:', error);
     }
   };
 
   return (
     <Container fluid>
       <h2 className="mt-4">Twitter Accounts</h2>
-
-      {generalError && (
-        <div style={{ color: 'red', margin: '20px 0' }}>
-          {generalError}
-        </div>
-      )}
-
       <Row className="mb-3">
         <Col>
           <Form.Group controlId="formFile" className="mb-3">
@@ -310,6 +339,12 @@ const Dashboard = () => {
             <Button onClick={() => handleAction('check_ep')} disabled={selectedAccounts.length === 0}>
               Check EP
             </Button>
+            <Button onClick={() => handleAction('check_verification')} disabled={selectedAccounts.length === 0}>
+              Check Verification Status
+            </Button>
+            <Button onClick={() => handleAction('check_alphapass')} disabled={selectedAccounts.length === 0}>
+              Check AlphaPass Ownership
+            </Button>
           </div>
         </Col>
       </Row>
@@ -330,6 +365,8 @@ const Dashboard = () => {
               <th>EP Count</th>
               <th>Twitter Status</th>
               <th>Sandbox Confirmation Status</th>
+              <th>Verification Status</th>
+              <th>AlphaPass Ownership</th>
               <th>Proxy</th>
               <th>Actions</th>
             </tr>
@@ -381,6 +418,8 @@ const Dashboard = () => {
                     <td>{account.ep_count}</td>
                     <td>{tweetStatus[account.id]}</td>
                     <td>{sandboxStatus[account.id]}</td>
+                    <td>{account.is_verified === 'Verified' ? '✔️' : account.is_verified}</td>
+                    <td>{account.owns_alphapass ? '✔️' : '❌'}</td>
                     <td>
                       <Form.Control
                         type="text"
@@ -424,6 +463,20 @@ const Dashboard = () => {
                         <ClipLoader size={20} color={"#000"} />
                       ) : (
                         sandboxStatus[account.id]
+                      )}
+                    </td>
+                    <td>
+                      {loadingState[account.id]?.check_verification ? (
+                        <ClipLoader size={20} color={"#000"} />
+                      ) : (
+                        account.is_verified === 'Verified' ? '✔️' : account.is_verified
+                      )}
+                    </td>
+                    <td>
+                      {loadingState[account.id]?.check_alphapass ? (
+                        <ClipLoader size={20} color={"#000"} />
+                      ) : (
+                        account.owns_alphapass ? '✔️' : '❌'
                       )}
                     </td>
                     <td>{account.proxy}</td>

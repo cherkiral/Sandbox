@@ -23,7 +23,7 @@ def create_twitter_account(db: Session, twitter_account: schemas.TwitterAccountC
         raise HTTPException(status_code=404, detail="User not found")
 
     account_count = db.query(TwitterAccount).filter(TwitterAccount.user_id == user_id).count()
-    if account_count >= user.max_accounts:
+    if account_count >= user.max_users:
         raise HTTPException(status_code=403, detail="Account limit reached for this user")
 
     try:
@@ -216,7 +216,7 @@ async def bulk_add_accounts(file: UploadFile = File(...), db: Session = Depends(
         accounts = content.decode('utf-8').splitlines()
 
         existing_account_count = db.query(TwitterAccount).filter(TwitterAccount.user_id == current_user.id).count()
-        remaining_limit = current_user.max_accounts - existing_account_count
+        remaining_limit = current_user.max_users - existing_account_count
 
         if remaining_limit <= 0:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account limit reached")

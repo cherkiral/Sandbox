@@ -213,7 +213,7 @@ async def bulk_add_accounts(file: UploadFile = File(...), db: Session = Depends(
                             current_user: User = Depends(get_current_user)):
     try:
         content = await file.read()
-        accounts = content.decode('utf-8').splitlines()
+        accounts = content.decode('utf-8', errors='replace').splitlines()
 
         existing_account_count = db.query(TwitterAccount).filter(TwitterAccount.user_id == current_user.id).count()
         remaining_limit = current_user.max_users - existing_account_count

@@ -344,13 +344,21 @@ const Dashboard = () => {
                     <td>{account.ep_count}</td>
                     <td>{tweetStatus[account.id]}</td>
                     <td>{sandboxStatus[account.id]}</td>
-                    <td>{account.is_verified === 'Verified' ? '✔️' : account.is_verified}</td>
+                    <td>
+                      {loadingState[account.id]?.check_verification ? (
+                          <ClipLoader size={20} color={"#000"}/>
+                      ) : (
+                          account.is_verified === "True" || account.is_verified === "Verified"
+                              ? '✔️'
+                              : '❌'
+                      )}
+                    </td>
                     <td>{account.owns_alphapass ? '✔️' : '❌'}</td>
                     <td>
                       <Form.Control
-                        type="text"
-                        name="proxy"
-                        value={editedAccount.proxy}
+                          type="text"
+                          name="proxy"
+                          value={editedAccount.proxy}
                         onChange={handleInputChange}
                       />
                     </td>

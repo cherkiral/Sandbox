@@ -166,17 +166,27 @@ def fetch_ep(account_id: int, db: Session = Depends(get_db), current_user: int =
 
 
 @router.get("/{account_id}/verification")
-def fetch_verification_status(account_id: int, db: Session = Depends(get_db), current_user: int = Depends(get_current_user)):
+def fetch_verification_status(account_id: int, db: Session = Depends(get_db),
+                              current_user: int = Depends(get_current_user)):
     try:
-        sandbox_account = db.query(TwitterAccount).filter(TwitterAccount.id == account_id,
-                                                          TwitterAccount.user_id == current_user.id).first()
+        sandbox_account = db.query(TwitterAccount).filter(
+            TwitterAccount.id == account_id,
+            TwitterAccount.user_id == current_user.id
+        ).first()
+
         if not sandbox_account:
             raise HTTPException(status_code=404, detail="Sandbox account not found")
 
         session = get_sandbox_session(sandbox_account, db, account_id)
         verification_status = get_user_verification(session, proxy=get_proxy_for_account(db, account_id))
-        sandbox_account.is_verified = verification_status
+
+        # Convert verification_status to a Boolean
+        is_verified_boolean = True if verification_status == "Verified" else False
+
+        # Update the database with a Boolean value
+        sandbox_account.is_verified = is_verified_boolean
         db.commit()
+
         return {"verification_status": verification_status}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching verification status: {str(e)}")

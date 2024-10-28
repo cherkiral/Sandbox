@@ -2,7 +2,6 @@ from sqlalchemy import Column, Integer, String, ForeignKey, LargeBinary, Boolean
 from sqlalchemy.orm import relationship
 from app.database import Base
 
-
 class TwitterAccount(Base):
     __tablename__ = "twitter_accounts"
 
@@ -11,16 +10,11 @@ class TwitterAccount(Base):
     twitter_token = Column(String, nullable=False, default="")
     sandbox_login = Column(String, nullable=False, default="")
     sandbox_password = Column(String, nullable=False, default="")
-
     session_data = Column(LargeBinary, nullable=True)
     ep_count = Column(Integer, default=0)
     is_verified = Column(String, default=False)
     owns_alphapass = Column(Boolean, default=False)
     proxy = Column(String, nullable=True)
 
-    max_accounts = Column(Integer, default=20)
-
     user_id = Column(Integer, ForeignKey('users.id'))
-
-    # Relationship with User
     user = relationship("User", back_populates="twitter_accounts")

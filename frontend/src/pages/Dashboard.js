@@ -215,7 +215,6 @@ const Dashboard = () => {
     }
 
     await Promise.all(batchedAccounts);
-    fetchAccounts();
   };
 
   const handleBulkUpload = async () => {

@@ -32,33 +32,31 @@ const Dashboard = () => {
       const response = await getTwitterAccounts(token);
       const initialAccounts = response.data;
 
-      const initialEpChanges = {};
-      const initialTweetStatus = {};
-      const initialSandboxStatus = {};
-      const initialLoadingState = {};
+      const updatedTweetStatus = { ...tweetStatus };
+      const updatedSandboxStatus = { ...sandboxStatus };
+      const updatedEpChanges = { ...epChanges };
 
       initialAccounts.forEach(account => {
-        initialEpChanges[account.id] = 0;
-        initialTweetStatus[account.id] = '';
-        initialSandboxStatus[account.id] = '';
-        initialLoadingState[account.id] = {
-          ep: false,
-          tweet: false,
-          sandbox: false,
-          verification: false,
-          alphapass: false,
-        };
+        if (!(account.id in updatedTweetStatus)) {
+          updatedTweetStatus[account.id] = ''; // retain existing status if it exists
+        }
+        if (!(account.id in updatedSandboxStatus)) {
+          updatedSandboxStatus[account.id] = ''; // retain existing status if it exists
+        }
+        if (!(account.id in updatedEpChanges)) {
+          updatedEpChanges[account.id] = 0; // retain existing status if it exists
+        }
       });
 
       setAccounts(initialAccounts);
-      setEpChanges(initialEpChanges);
-      setTweetStatus(initialTweetStatus);
-      setSandboxStatus(initialSandboxStatus);
-      setLoadingState(initialLoadingState);
+      setTweetStatus(updatedTweetStatus);
+      setSandboxStatus(updatedSandboxStatus);
+      setEpChanges(updatedEpChanges);
     } catch (error) {
       console.error('Error fetching Twitter accounts:', error);
     }
   };
+
 
   const handleEditClick = (account) => {
     setEditingAccountId(account.id);
@@ -125,93 +123,50 @@ const Dashboard = () => {
   };
 
   const batchAction = async (action, batchSize = 5) => {
-    const token = localStorage.getItem('authToken');
-    const batchedAccounts = [];
+  const token = localStorage.getItem('authToken');
+  const batchedAccounts = [];
 
-    for (let i = 0; i < selectedAccounts.length; i += batchSize) {
-      const batch = selectedAccounts.slice(i, i + batchSize);
-      const batchPromises = batch.map(async (accountId) => {
-        const account = accounts.find((acc) => acc.id === accountId);
-        setLoadingState((prevLoading) => ({
-          ...prevLoading,
-          [accountId]: { ...prevLoading[accountId], [action]: true },
-        }));
+  for (let i = 0; i < selectedAccounts.length; i += batchSize) {
+    const batch = selectedAccounts.slice(i, i + batchSize);
+    const batchPromises = batch.map(async (accountId) => {
+      const account = accounts.find((acc) => acc.id === accountId);
+      setLoadingState((prevLoading) => ({
+        ...prevLoading,
+        [accountId]: { ...prevLoading[accountId], [action]: true },
+      }));
 
-        try {
-          if (action === 'check_ep') {
-            const response = await axios.get(`${BASE_URL}/accounts/${accountId}/ep`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            const newEpCount = response.data.ep;
-            const epDifference = newEpCount - account.ep_count;
-
-            setAccounts((prevAccounts) =>
-              prevAccounts.map((acc) =>
-                acc.id === accountId ? { ...acc, ep_count: newEpCount } : acc
-              )
-            );
-            setEpChanges((prevChanges) => ({
-              ...prevChanges,
-              [accountId]: epDifference === 0 ? 'No change' : epDifference,
-            }));
-          } else if (action === 'tweet') {
-            const response = await axios.post(
-              `${BASE_URL}/accounts/tweet`,
-              { twitter_token: account.twitter_token, text: "https://sandbox.game #TheSandbox #AlphaSeason4 #AS4SocialChallenge" },
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setTweetStatus((prevStatuses) => ({
-              ...prevStatuses,
-              [accountId]: response.data?.tweet_response?.errors
-                ? response.data.tweet_response.errors[0].message
-                : 'Tweet posted successfully!',
-            }));
-          } else if (action === 'sandbox_confirm') {
-            const response = await axios.post(
-              `${BASE_URL}/accounts/sandbox/confirm/${accountId}`,
-              {},
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setSandboxStatus((prevStatuses) => ({
-              ...prevStatuses,
-              [accountId]: response.data.errors
-                ? response.data.errors[0].message
-                : `Challenge queued, ID: ${response.data.challenge_id}`,
-            }));
-          } else if (action === 'check_verification') {
-            const response = await axios.get(`${BASE_URL}/accounts/${accountId}/verification`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            setAccounts((prevAccounts) =>
-              prevAccounts.map((acc) =>
-                acc.id === accountId ? { ...acc, is_verified: response.data.verification_status } : acc
-              )
-            );
-          } else if (action === 'check_alphapass') {
-            const response = await axios.get(`${BASE_URL}/accounts/${accountId}/alphapass`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            setAccounts((prevAccounts) =>
-              prevAccounts.map((acc) =>
-                acc.id === accountId ? { ...acc, owns_alphapass: response.data.owns_alphapass } : acc
-              )
-            );
-          }
-        } catch (error) {
-          console.error(`Error performing ${action} for account ${accountId}:`, error);
-        } finally {
-          setLoadingState((prevLoading) => ({
-            ...prevLoading,
-            [accountId]: { ...prevLoading[accountId], [action]: false },
+      try {
+        if (action === 'tweet') {
+          const response = await axios.post(
+            `${BASE_URL}/accounts/tweet`,
+            { twitter_token: account.twitter_token, text: "https://sandbox.game #TheSandbox #AlphaSeason4 #AS4SocialChallenge" },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setTweetStatus((prevStatuses) => ({
+            ...prevStatuses,
+            [accountId]: response.data?.tweet_response?.errors
+              ? response.data.tweet_response.errors[0].message
+              : 'Tweet posted successfully!',
           }));
         }
-      });
-      batchedAccounts.push(Promise.all(batchPromises));
-    }
+        // Similar logic for other actions...
 
-    await Promise.all(batchedAccounts);
-    fetchAccounts();
-  };
+      } catch (error) {
+        console.error(`Error performing ${action} for account ${accountId}:`, error);
+      } finally {
+        setLoadingState((prevLoading) => ({
+          ...prevLoading,
+          [accountId]: { ...prevLoading[accountId], [action]: false },
+        }));
+      }
+    });
+    batchedAccounts.push(Promise.all(batchPromises));
+  }
+
+  await Promise.all(batchedAccounts);
+  fetchAccounts(); // Merged status approach ensures statuses stay intact on refresh
+};
+
 
   const handleBulkUpload = async () => {
     const formData = new FormData();

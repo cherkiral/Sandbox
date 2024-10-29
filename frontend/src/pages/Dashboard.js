@@ -243,7 +243,7 @@ const Dashboard = () => {
             />
           </Form.Group>
           <Button onClick={handleBulkUpload} disabled={!bulkFile}>
-            Bulk Add Accounts
+            Добавить аккаунты
           </Button>
         </Col>
       </Row>
@@ -252,10 +252,10 @@ const Dashboard = () => {
         <Col>
           <div style={{ display: 'flex', gap: '10px' }}>
             <Button onClick={() => batchAction('tweet')} disabled={selectedAccounts.length === 0}>
-              Post Tweet
+              Отправить твит
             </Button>
             <Button onClick={() => batchAction('sandbox_confirm')} disabled={selectedAccounts.length === 0}>
-              Sandbox Confirm Request
+              Отправить подтверждение на Sandbox
             </Button>
           </div>
         </Col>
@@ -263,13 +263,13 @@ const Dashboard = () => {
         <Col>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
             <Button onClick={() => batchAction('check_ep')} disabled={selectedAccounts.length === 0}>
-              Check EP
+              Проверить ЕР
             </Button>
             <Button onClick={() => batchAction('check_verification')} disabled={selectedAccounts.length === 0}>
-              Check Verification Status
+              Проверить статус верификации
             </Button>
             <Button onClick={() => batchAction('check_alphapass')} disabled={selectedAccounts.length === 0}>
-              Check AlphaPass Ownership
+              Проверить наличие альфапаса
             </Button>
           </div>
         </Col>
@@ -284,17 +284,17 @@ const Dashboard = () => {
                   {selectedAccounts.length === accounts.length ? 'Deselect All' : 'Select All'}
                 </Button>
               </th>
-              <th>Account Number</th>
-              <th>Twitter Token</th>
-              <th>Sandbox Login</th>
-              <th>Sandbox Password</th>
-              <th>EP Count</th>
-              <th>Twitter Status</th>
-              <th>Sandbox Confirmation Status</th>
-              <th>Verification Status</th>
-              <th>AlphaPass Ownership</th>
-              <th>Proxy</th>
-              <th>Actions</th>
+              <th>Номер Аккаунта</th>
+              <th>Токен твиттера</th>
+              <th>Логин Sandbox</th>
+              <th>Пароль Sandbox</th>
+              <th>КоличествоEP</th>
+              <th>Статус отправки твита</th>
+              <th>Статус подтверждения Sandbox</th>
+              <th>Статус верификации</th>
+              <th>Наличие Альфапасса</th>
+              <th>Прокси</th>
+              <th>Действие</th>
             </tr>
           </thead>
           <tbody>

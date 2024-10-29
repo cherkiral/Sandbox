@@ -162,7 +162,7 @@ const Dashboard = () => {
           } else if (action === 'tweet') {
             const response = await axios.post(
               `${BASE_URL}/accounts/tweet`,
-              { twitter_token: account.twitter_token, text: "https://sandbox.game #TheSandbox #AlphaSeason4 #AS4SocialChallenge" },
+              { twitter_token: account.twitter_token, text: "Check out my whip 🏎️ 🔥 Not impressed? Play Crash! in @TheSandboxGame and show me what you got 👀  https://register-landings.sandbox.game/alphaseason4-sign-up/ #TheSandbox #AlphaSeason4 #AS4SocialChallenge " },
               { headers: { Authorization: `Bearer ${token}` } }
             );
             setTweetStatus((prevStatuses) => ({

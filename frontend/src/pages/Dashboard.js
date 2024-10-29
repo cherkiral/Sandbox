@@ -352,7 +352,7 @@ const Dashboard = () => {
                       {loadingState[account.id]?.check_verification ? (
                         <ClipLoader size={20} color={"#000"} />
                       ) : (
-                        account.is_verified === "True" || account.is_verified === "Verified" ? '✔️' : '❌'
+                        account.is_verified === "True" || account.is_verified === "Verified" ? '✔️' : account.is_verified
                       )}
                     </td>
                     <td>{account.owns_alphapass ? '✔️' : '❌'}</td>
@@ -405,7 +405,7 @@ const Dashboard = () => {
                       {loadingState[account.id]?.check_verification ? (
                         <ClipLoader size={20} color={"#000"} />
                       ) : (
-                        account.is_verified === "True" || account.is_verified === "Verified" ? '✔️' : '❌'
+                        account.is_verified === "True" || account.is_verified === "Verified" ? '✔️' : account.is_verified
                       )}
                     </td>
                     <td>

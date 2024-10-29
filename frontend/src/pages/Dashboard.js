@@ -148,8 +148,18 @@ const Dashboard = () => {
               ? response.data.tweet_response.errors[0].message
               : 'Tweet posted successfully!',
           }));
+        } else if (action === 'check_verification') {
+          const response = await axios.get(`${BASE_URL}/accounts/${accountId}/verification`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const newVerificationStatus = response.data.verification_status;
+          setAccounts((prevAccounts) =>
+            prevAccounts.map((acc) =>
+              acc.id === accountId ? { ...acc, is_verified: newVerificationStatus } : acc
+            )
+          );
         }
-        // Similar logic for other actions...
+        // Additional actions like 'check_ep', 'sandbox_confirm', etc. can be updated similarly
 
       } catch (error) {
         console.error(`Error performing ${action} for account ${accountId}:`, error);
@@ -164,8 +174,9 @@ const Dashboard = () => {
   }
 
   await Promise.all(batchedAccounts);
-  fetchAccounts(); // Merged status approach ensures statuses stay intact on refresh
+  // Removing `fetchAccounts()` here to prevent overwriting statuses
 };
+
 
 
   const handleBulkUpload = async () => {

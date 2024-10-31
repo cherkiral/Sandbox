@@ -13,6 +13,7 @@ const Dashboard = () => {
   const [epChanges, setEpChanges] = useState({});
   const [loadingState, setLoadingState] = useState({});
   const [editingAccountId, setEditingAccountId] = useState(null);
+  const [tweetText, setTweetText] = useState("sandbox.game #TheSandbox #AlphaSeason4 #AS4SocialChallenge");
   const [editedAccount, setEditedAccount] = useState({
     account_number: '',
     twitter_token: '',
@@ -162,7 +163,7 @@ const Dashboard = () => {
           } else if (action === 'tweet') {
             const response = await axios.post(
               `${BASE_URL}/accounts/tweet`,
-              { twitter_token: account.twitter_token, text: "sandbox.game #TheSandbox #AlphaSeason4 #AS4SocialChallenge" },
+              { twitter_token: account.twitter_token, text: tweetText }, // Use tweetText state here
               { headers: { Authorization: `Bearer ${token}` } }
             );
             setTweetStatus((prevStatuses) => ({
@@ -249,6 +250,20 @@ const Dashboard = () => {
           <Button onClick={handleBulkUpload} disabled={!bulkFile}>
             Добавить аккаунты
           </Button>
+        </Col>
+      </Row>
+
+      <Row>
+        <Col>
+          <Form.Group controlId="tweetText">
+            <Form.Label>Tweet Text</Form.Label>
+            <Form.Control
+              type="text"
+              value={tweetText}
+              onChange={(e) => setTweetText(e.target.value)}
+              placeholder="Enter your tweet text"
+            />
+          </Form.Group>
         </Col>
       </Row>
 
